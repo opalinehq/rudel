@@ -117,12 +117,18 @@ jobs:
 
       - name: Publish @opalinehq/cli with provenance
         working-directory: apps/cli
+        env:
+          OPALINE_BUILD_POSTHOG_KEY: ${{ vars.OPALINE_BUILD_POSTHOG_KEY }}
+          OPALINE_BUILD_POSTHOG_HOST: ${{ vars.OPALINE_BUILD_POSTHOG_HOST }}
         run: |
+          test -n "${OPALINE_BUILD_POSTHOG_KEY}"
+          test -n "${OPALINE_BUILD_POSTHOG_HOST}"
           version="$(node -p "require('./package.json').version")"
           if npm view "@opalinehq/cli@${version}" version >/dev/null 2>&1; then
             echo "@opalinehq/cli@${version} is already published."
           else
-            npm publish --access public --provenance
+            bun run build
+            npm publish --ignore-scripts --access public --provenance
           fi
 
       - name: Wait for @opalinehq/cli registry availability
