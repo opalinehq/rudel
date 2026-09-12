@@ -23,6 +23,12 @@ Existing `rudel` users do not need to log in again. Opaline intentionally reads
 the existing `~/.rudel` credential and state directory, and the `rudel` package
 continues as a compatibility alias.
 
+Run `opaline upload` from any directory, including your home folder. The picker
+finds saved sessions across repositories and uploads the repositories you select.
+It also enables automatic uploads for those selections. Claude Code's hook is
+installed in your user settings, so setup does not depend on your current
+directory. Existing hooks and settings are preserved.
+
 ## Typical workflow
 
 ```bash
@@ -101,8 +107,8 @@ OPALINE_LOG_LEVEL=debug opaline doctor
   found automatically under `~/.rudel/credentials.json`.
 - **API unreachable:** confirm that `https://opaline.so/health` is reachable
   and check `OPALINE_API_BASE`/`RUDEL_API_BASE` overrides.
-- **Hooks disabled:** run `opaline enable` from the project where the agent is
-  used. Existing `rudel` hook commands are recognized and upgraded when the
+- **Hooks disabled:** run `opaline upload` and select the repositories to enable.
+  Existing `rudel` hook commands are recognized and upgraded when the
   hook is installed again.
 - **Queued upload failures:** run `opaline upload --retry`. Permanent failures
   remain visible in `opaline whoami`.
