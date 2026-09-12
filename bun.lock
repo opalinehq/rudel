@@ -12,7 +12,7 @@
     },
     "apps/cli": {
       "name": "@opalinehq/cli",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "bin": {
         "opaline": "./dist/cli.js",
       },
@@ -41,7 +41,7 @@
         "rudel": "./bin/rudel.js",
       },
       "dependencies": {
-        "@opalinehq/cli": "0.5.2",
+        "@opalinehq/cli": "0.5.3",
       },
     },
   },

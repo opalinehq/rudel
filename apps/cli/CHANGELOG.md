@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.3
+
+### Bug fixes
+
+- Use `opaline.so` for login and uploads, preserving existing credentials from the old production address.
+- Install Claude Code upload hooks in user settings so repository selection works from any directory.
+- Resolve and save workspace destinations for selected repositories and their future automatic uploads.
+- Probe direct R2 support before rejecting a first oversized session upload.
+
 ## 0.5.2
 
 ### Bug fixes
