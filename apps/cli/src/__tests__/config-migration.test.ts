@@ -26,6 +26,7 @@ describe("Rudel config compatibility", () => {
 				token: "fixture-token",
 				apiBaseUrl: "https://app.rudel.ai",
 				authType: "api-key",
+				apiKeyId: "fixture-key-id",
 			}),
 			{ mode: 0o600 },
 		);
@@ -34,12 +35,30 @@ describe("Rudel config compatibility", () => {
 		expect(info.source).toBe("rudel-default");
 		expect(loadCredentials("read-only", info.directory)).toEqual({
 			token: "fixture-token",
-			apiBaseUrl: "https://app.rudel.ai",
+			apiBaseUrl: "https://opaline.so",
 			authType: "api-key",
-			apiKeyId: undefined,
+			apiKeyId: "fixture-key-id",
 			user: undefined,
 			organizations: undefined,
 		});
+	});
+
+	test("preserves a custom credential API base", async () => {
+		const customDirectory = join(fixtureHome, "custom");
+		await mkdir(customDirectory, { recursive: true, mode: 0o700 });
+		await writeFile(
+			join(customDirectory, "credentials.json"),
+			JSON.stringify({
+				token: "fixture-token",
+				apiBaseUrl: "https://opaline.internal.example/base",
+				authType: "api-key",
+			}),
+			{ mode: 0o600 },
+		);
+
+		expect(loadCredentials("read-only", customDirectory)?.apiBaseUrl).toBe(
+			"https://opaline.internal.example/base",
+		);
 	});
 
 	test("ignores the dead Gazed config path", async () => {

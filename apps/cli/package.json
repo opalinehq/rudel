@@ -7,7 +7,7 @@
 	"engines": {
 		"node": ">=20"
 	},
-	"homepage": "https://app.rudel.ai",
+	"homepage": "https://opaline.so",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/opalinehq/cli.git",

@@ -9,14 +9,14 @@ describe("resolveBrowserOpener", () => {
 		// a command separator. The invariant is that no fragment of the URL appears
 		// in the command or its arguments — it may only travel via the environment,
 		// which nothing parses.
-		const url = "https://app.rudel.ai/device?user_code=X&calc";
+		const url = "https://opaline.so/device?user_code=X&calc";
 		const { command, args } = resolveBrowserOpener("win32", url);
 
 		expect(command).not.toBe("cmd");
 		expect(command).not.toBe("cmd.exe");
 		expect(command).not.toContain("rundll32");
 		for (const arg of args) {
-			expect(arg).not.toContain("app.rudel.ai");
+			expect(arg).not.toContain("opaline.so");
 			expect(arg).not.toContain("user_code");
 			expect(arg).not.toContain("&");
 		}
@@ -26,7 +26,7 @@ describe("resolveBrowserOpener", () => {
 		// explorer.exe silently ignores http URLs with a query string, so the
 		// opener ShellExecutes through Start-Process with the URL in an env var.
 		// Plain -Command text, never the EDR-flagged -EncodedCommand pattern.
-		const url = "https://app.rudel.ai/device?user_code=X&calc";
+		const url = "https://opaline.so/device?user_code=X&calc";
 		const { command, args, detach, env } = resolveBrowserOpener("win32", url);
 
 		expect(command).toBe("powershell.exe");
@@ -43,7 +43,7 @@ describe("resolveBrowserOpener", () => {
 		["linux", "xdg-open"],
 		["freebsd", "xdg-open"],
 	])("uses %p opener %p", (platform, expected) => {
-		const url = "https://app.rudel.ai/device?user_code=X";
+		const url = "https://opaline.so/device?user_code=X";
 		const { command, args, detach, env } = resolveBrowserOpener(platform, url);
 
 		expect(command).toBe(expected);
@@ -57,29 +57,29 @@ describe("buildVerificationUrl", () => {
 	test("prefers the server-supplied complete URL", () => {
 		expect(
 			buildVerificationUrl({
-				verification_uri: "https://app.rudel.ai/device",
+				verification_uri: "https://opaline.so/device",
 				verification_uri_complete:
-					"https://app.rudel.ai/device?user_code=ABCD1234",
+					"https://opaline.so/device?user_code=ABCD1234",
 				user_code: "ABCD1234",
 			}),
-		).toBe("https://app.rudel.ai/device?user_code=ABCD1234");
+		).toBe("https://opaline.so/device?user_code=ABCD1234");
 	});
 
 	test("appends the user code when no complete URL is supplied", () => {
 		expect(
 			buildVerificationUrl({
-				verification_uri: "https://app.rudel.ai/device",
+				verification_uri: "https://opaline.so/device",
 				verification_uri_complete: undefined,
 				user_code: "ABCD1234",
 			}),
-		).toBe("https://app.rudel.ai/device?user_code=ABCD1234");
+		).toBe("https://opaline.so/device?user_code=ABCD1234");
 	});
 
 	test("does not corrupt a verification URI that already has a query string", () => {
 		// Regression test: `?`-concatenation produced two `?` separators and a
 		// malformed URL. Reachable via CLI_DEVICE_VERIFICATION_URL.
 		const built = buildVerificationUrl({
-			verification_uri: "https://app.rudel.ai/device?tenant=acme",
+			verification_uri: "https://opaline.so/device?tenant=acme",
 			verification_uri_complete: undefined,
 			user_code: "ABCD1234",
 		});
@@ -91,7 +91,7 @@ describe("buildVerificationUrl", () => {
 
 	test("percent-encodes a user code containing URL-significant characters", () => {
 		const built = buildVerificationUrl({
-			verification_uri: "https://app.rudel.ai/device",
+			verification_uri: "https://opaline.so/device",
 			verification_uri_complete: undefined,
 			user_code: "AB&CD=EF",
 		});

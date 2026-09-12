@@ -16,7 +16,7 @@ already have. `opaline enable` remains available to enable the current
 repository directly.
 
 The CLI keeps using the existing `~/.rudel` state directory so upgrades do not
-require another login. Its production API remains `https://app.rudel.ai`.
+require another login. Its production API is `https://opaline.so`.
 
 For commands, configuration, troubleshooting, and the full security/data
 handling disclosure, see the

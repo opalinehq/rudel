@@ -1,4 +1,5 @@
 import type { RedactionCounts } from "../internal/secret-filter/index.js";
+import { PRODUCTION_API_BASE } from "./api-target.js";
 
 export type SessionTag =
 	| "research"
@@ -36,4 +37,4 @@ export interface UploadResult {
 	usageChecksum?: string;
 }
 
-export const DEFAULT_ENDPOINT = "https://app.rudel.ai/rpc";
+export const DEFAULT_ENDPOINT = `${PRODUCTION_API_BASE}/rpc`;

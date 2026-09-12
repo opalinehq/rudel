@@ -66,7 +66,7 @@ describe("resolveApiBase", () => {
 		).toBe("http://internal.example");
 	});
 
-	test.each(["http://localhost:4010", "https://app.rudel.ai"])(
+	test.each(["http://localhost:4010", "https://opaline.so"])(
 		"accepts %p with neither the flag nor the env var",
 		(input) => {
 			delete process.env[ENV_VAR];
@@ -83,9 +83,9 @@ describe("resolveApiBase", () => {
 		// Otherwise `${apiBase}/api/auth/device/code` gains a doubled slash.
 		expect(
 			acceptedUrl(
-				resolveApiBase("https://app.rudel.ai/", allowsPlaintext(false)),
+				resolveApiBase("https://opaline.so/", allowsPlaintext(false)),
 			),
-		).toBe("https://app.rudel.ai");
+		).toBe("https://opaline.so");
 	});
 
 	test("still refuses a non-http scheme when the override is set", () => {
@@ -165,7 +165,7 @@ describe("describeLogoutApiBaseRisk", () => {
 		);
 	});
 
-	test.each(["https://app.rudel.ai", "http://localhost:4010"])(
+	test.each(["https://opaline.so", "http://localhost:4010"])(
 		"stays silent for %p",
 		(storedApiBase) => {
 			expect(describeLogoutApiBaseRisk(storedApiBase)).toBeUndefined();
@@ -188,7 +188,7 @@ describe("describeStoredApiBaseRisk", () => {
 		expect(describeStoredApiBaseRisk("http://internal.example")).toBeString();
 	});
 
-	test.each(["https://app.rudel.ai", "http://localhost:4010"])(
+	test.each(["https://opaline.so", "http://localhost:4010"])(
 		"stays silent for %p",
 		(storedApiBase) => {
 			expect(describeStoredApiBaseRisk(storedApiBase)).toBeUndefined();

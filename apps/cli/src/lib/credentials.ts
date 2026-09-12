@@ -10,6 +10,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { normalizeLegacyProductionApiBase } from "./api-target.js";
 import { debugLog } from "./debug.js";
 import { getConfigDir } from "./local-state.js";
 
@@ -38,7 +39,14 @@ export type CredentialReadMode = "secure" | "read-only";
 export function saveCredentials(credentials: Credentials): void {
 	const dir = getConfigDir();
 	const path = getCredentialsPath(dir);
-	const content = JSON.stringify(credentials, null, 2);
+	const content = JSON.stringify(
+		{
+			...credentials,
+			apiBaseUrl: normalizeLegacyProductionApiBase(credentials.apiBaseUrl),
+		},
+		null,
+		2,
+	);
 	debugLog("saving credentials", { path });
 
 	mkdirSync(dir, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
@@ -97,7 +105,7 @@ function parseCredentials(content: string): Credentials {
 
 	return {
 		token,
-		apiBaseUrl,
+		apiBaseUrl: normalizeLegacyProductionApiBase(apiBaseUrl),
 		authType,
 		apiKeyId,
 		user,

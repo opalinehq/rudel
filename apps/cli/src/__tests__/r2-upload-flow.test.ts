@@ -470,7 +470,7 @@ describe("capability-gated R2 upload flow", () => {
 		expect(requestPaths).toEqual([]);
 	});
 
-	test("streams a 100+ MiB adapter request through filtering, init, and multipart with bounded heap and RSS", async () => {
+	test("probes R2 for a first 100+ MiB adapter upload without a capability cache", async () => {
 		await isolateCapabilityCache();
 		const directory = await mkdtemp(join(tmpdir(), "opaline-r2-e2e-large-"));
 		temporaryDirectories.push(directory);
@@ -578,12 +578,6 @@ describe("capability-gated R2 upload flow", () => {
 		});
 		activeServers.push(server);
 		const config = createUploadConfig(server);
-		const warmup = await uploadSession(
-			createRequest("large-r2-warmup", "clean"),
-			config,
-		);
-		expect(warmup.success).toBe(true);
-		requestPaths.length = 0;
 
 		const probePath = join(
 			import.meta.dir,
@@ -654,7 +648,7 @@ describe("capability-gated R2 upload flow", () => {
 				"bun",
 				probePath,
 				transcriptPath,
-				"https://app.rudel.ai/rpc",
+				"https://opaline.so/rpc",
 				TOKEN,
 				"oversized-record-codex-session",
 			],
@@ -681,7 +675,7 @@ describe("capability-gated R2 upload flow", () => {
 		expect(memory.requestPaths).toEqual([]);
 	}, 120_000);
 
-	test("keeps a 100+ MiB failed R2 init bounded and retryable without legacy fallback", async () => {
+	test("keeps a first 100+ MiB transient R2 init retryable without legacy fallback", async () => {
 		await isolateCapabilityCache();
 		const directory = await mkdtemp(
 			join(tmpdir(), "opaline-r2-failed-init-large-"),
@@ -726,12 +720,6 @@ describe("capability-gated R2 upload flow", () => {
 		});
 		activeServers.push(server);
 		const config = createUploadConfig(server);
-		const warmup = await uploadSession(
-			createRequest("failed-init-r2-warmup", "clean"),
-			config,
-		);
-		expect(warmup.success).toBe(true);
-		requestPaths.length = 0;
 
 		const probePath = join(
 			import.meta.dir,
@@ -786,7 +774,7 @@ describe("capability-gated R2 upload flow", () => {
 				"api-key",
 				TOKEN,
 			),
-		).toBe(true);
+		).toBe(false);
 	}, 120_000);
 
 	test("rejects an empty main transcript locally before any R2 request", async () => {
@@ -819,7 +807,7 @@ describe("capability-gated R2 upload flow", () => {
 		expect(requestCount).toBe(0);
 	});
 
-	test("rejects a file-backed transcript above the safe legacy materialization cap", async () => {
+	test("probes R2 for a first oversized upload and falls back on an unsupported server", async () => {
 		await isolateCapabilityCache();
 		const directory = await mkdtemp(join(tmpdir(), "opaline-r2-legacy-cap-"));
 		temporaryDirectories.push(directory);
@@ -850,11 +838,6 @@ describe("capability-gated R2 upload flow", () => {
 		});
 		activeServers.push(server);
 		const config = createUploadConfig(server);
-		await rememberR2UploadCapability(
-			new URL(config.endpoint),
-			"api-key",
-			TOKEN,
-		);
 
 		const result = await uploadSession(
 			createFileRequest("legacy-too-large", transcriptPath),

@@ -18,7 +18,7 @@
  *
  * IMPORTANT: parsing alone does NOT make a URL safe to hand to cmd.exe. `&`,
  * `|`, `(`, `)` and (in a query) `^` all survive WHATWG URL serialization, so
- * `https://app.rudel.ai/device?user_code=X&calc` passes every check here while
+ * `https://opaline.so/device?user_code=X&calc` passes every check here while
  * still injecting on Windows. That is why the Windows opener must not use a
  * shell at all — this validator and the shell-free opener are complementary,
  * not alternatives, and they cover disjoint platforms.
@@ -118,7 +118,7 @@ function validateCommon(input: string): SafeUrlResult {
 		};
 	}
 
-	// `https://app.rudel.ai@evil.example/device` resolves to evil.example while
+	// `https://opaline.so@evil.example/device` resolves to evil.example while
 	// reading as the real host. We print this URL for the user to copy, so
 	// userinfo is a spoofing vector, not just a credential-leak one.
 	if (parsed.username !== "" || parsed.password !== "") {

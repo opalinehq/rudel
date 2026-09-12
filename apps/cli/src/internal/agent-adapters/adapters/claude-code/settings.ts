@@ -1,6 +1,6 @@
-import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
 const HOOK_COMMAND = "opaline hooks claude session-end";
 const LEGACY_HOOK_COMMAND = "rudel hooks claude session-end";
@@ -24,30 +24,8 @@ interface ClaudeSettings {
 	[key: string]: unknown;
 }
 
-function findClaudeDir(): string {
-	let dir = resolve(process.cwd());
-
-	while (dir !== dirname(dir)) {
-		const candidate = join(dir, ".claude");
-		if (existsSync(candidate)) {
-			return candidate;
-		}
-		dir = dirname(dir);
-	}
-
-	try {
-		const gitRoot = execSync("git rev-parse --show-toplevel", {
-			encoding: "utf-8",
-			stdio: ["pipe", "pipe", "pipe"],
-		}).trim();
-		return join(gitRoot, ".claude");
-	} catch {
-		return join(resolve(process.cwd()), ".claude");
-	}
-}
-
 export function getClaudeSettingsPath(): string {
-	return join(findClaudeDir(), "settings.json");
+	return join(homedir(), ".claude", "settings.json");
 }
 
 export function readClaudeSettings(): ClaudeSettings {
@@ -106,9 +84,12 @@ export function removeHook(): void {
 	const entries = hooks?.SessionEnd;
 	if (!hooks || !Array.isArray(entries)) return;
 
-	hooks.SessionEnd = entries.filter(
-		(entry) => !entry.hooks?.some((hook) => isOpalineHookCommand(hook.command)),
-	);
+	hooks.SessionEnd = entries
+		.map((entry) => ({
+			...entry,
+			hooks: entry.hooks.filter((hook) => !isOpalineHookCommand(hook.command)),
+		}))
+		.filter((entry) => entry.hooks.length > 0);
 
 	if (hooks.SessionEnd.length === 0) {
 		delete hooks.SessionEnd;

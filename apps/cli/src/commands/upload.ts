@@ -33,7 +33,7 @@ import {
 	removeFailedUpload,
 } from "../lib/failed-uploads.js";
 import { type GitInfo, getGitInfo } from "../lib/git-info.js";
-import { getProjectOrgId } from "../lib/project-config.js";
+import { getProjectOrgId, setProjectOrgId } from "../lib/project-config.js";
 import { scanAndGroupProjects } from "../lib/project-grouping.js";
 import { resolveSession } from "../lib/session-resolver.js";
 import {
@@ -42,6 +42,7 @@ import {
 	type SessionTag,
 } from "../lib/types.js";
 import { allowsInsecureEndpoint } from "../lib/upload-endpoint.js";
+import { getDefaultUploadOrganizationId } from "../lib/upload-organization.js";
 import {
 	groupUploadProjectsByRepository,
 	orderUploadRepositoriesNewFirst,
@@ -123,7 +124,38 @@ async function runInteractiveUpload(
 		(project) => prepareUploadTarget(project, flags.org),
 		{ concurrency: 10 },
 	);
-	const targets = preparedTargets.map((prepared) => prepared.target);
+	const organizations = credentials?.organizations ?? [];
+	let defaultOrganizationId = getDefaultUploadOrganizationId(
+		organizations,
+		credentials?.user?.id,
+	);
+	if (
+		preparedTargets.some(
+			(prepared) => prepared.target.organizationId === undefined,
+		) &&
+		defaultOrganizationId === undefined &&
+		organizations.length > 1
+	) {
+		spin.stop("Projects found");
+		const selected = await p.select({
+			message:
+				"Choose a workspace for repositories without a saved destination",
+			options: organizations.map((organization) => ({
+				value: organization.id,
+				label: organization.name,
+			})),
+		});
+		if (p.isCancel(selected)) {
+			p.cancel("Upload cancelled.");
+			return;
+		}
+		defaultOrganizationId = selected;
+		spin.start("Checking uploaded sessions...");
+	}
+	const targets = preparedTargets.map(({ target }) => ({
+		...target,
+		organizationId: target.organizationId ?? defaultOrganizationId,
+	}));
 	const metadataByProject = new Map<ScannedProject, UploadProjectMetadata>();
 	for (const prepared of preparedTargets) {
 		metadataByProject.set(prepared.target.project, prepared.metadata);
@@ -145,6 +177,7 @@ async function runInteractiveUpload(
 		}
 		uploadProjects = reconciled.map((project) => ({
 			...project,
+			organizationId: project.resolvedOrganizationId,
 			...getUploadProjectMetadata(metadataByProject, project.project),
 			statusKnown: true,
 		}));
@@ -280,6 +313,16 @@ async function runInteractiveUpload(
 
 	if (!credentials) {
 		return new Error("Not authenticated. Run `opaline login` first.");
+	}
+	for (const repository of selectedRepositories) {
+		for (const project of repository.projects) {
+			if (project.organizationId) {
+				await setProjectOrgId(
+					project.project.projectPath,
+					project.organizationId,
+				);
+			}
+		}
 	}
 	const savedAutoUploadConfig = saveVisibleAutoUploadSelections(
 		orderedRepositories.map(toAutoUploadRepositorySelection),

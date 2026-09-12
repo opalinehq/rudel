@@ -1,4 +1,12 @@
-export const PRODUCTION_API_BASE = "https://app.rudel.ai";
+export const PRODUCTION_API_BASE = "https://opaline.so";
+const LEGACY_PRODUCTION_API_BASE = "https://app.rudel.ai";
+
+export function normalizeLegacyProductionApiBase(apiBaseUrl: string): string {
+	return apiBaseUrl === LEGACY_PRODUCTION_API_BASE ||
+		apiBaseUrl === `${LEGACY_PRODUCTION_API_BASE}/`
+		? PRODUCTION_API_BASE
+		: apiBaseUrl;
+}
 
 export function getApiBaseOverride(
 	environment: NodeJS.ProcessEnv = process.env,

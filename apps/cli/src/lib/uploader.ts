@@ -368,10 +368,11 @@ export async function uploadSession(
 	const client: ContractRouterClient<typeof contract> = createORPCClient(link);
 	const authType = config.authType ?? "bearer";
 	const endpointUrl = new URL(endpoint.url);
-	if (
+	const shouldProbeR2 =
 		authType === "api-key" &&
-		hasAdvertisedR2UploadCapability(endpointUrl, authType, config.token)
-	) {
+		(hasAdvertisedR2UploadCapability(endpointUrl, authType, config.token) ||
+			(await exceedsLegacyMaterializationLimit(request)));
+	if (authType === "api-key" && shouldProbeR2) {
 		try {
 			const r2Result = await uploadSessionViaR2(request, {
 				authType,
@@ -638,6 +639,16 @@ async function getFileBackedAggregateBytes(
 		...request.subagents.map((subagent) => stat(subagent.path)),
 	]);
 	return files.reduce((total, file) => total + file.size, 0);
+}
+
+async function exceedsLegacyMaterializationLimit(
+	request: UploadSessionRequest,
+): Promise<boolean> {
+	if (!isFileBackedUploadRequest(request)) return false;
+	return (
+		(await getFileBackedAggregateBytes(request)) >
+		LEGACY_MATERIALIZATION_MAX_BYTES
+	);
 }
 
 async function materializeLegacyUploadRequest(

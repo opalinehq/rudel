@@ -111,6 +111,24 @@ test("repairs existing permissions and atomically replaces credentials", () => {
 	}
 });
 
+test("canonicalizes the legacy production API base when saving credentials", () => {
+	const configDir = join(tempRoot, "save-legacy-production-base");
+
+	withConfigDir(configDir, () =>
+		saveCredentials({
+			token: NEW_TOKEN,
+			apiBaseUrl: "https://app.rudel.ai/",
+		}),
+	);
+
+	expect(
+		JSON.parse(readFileSync(join(configDir, "credentials.json"), "utf8")),
+	).toEqual({
+		token: NEW_TOKEN,
+		apiBaseUrl: "https://opaline.so",
+	});
+});
+
 test("repairs existing permissions before loading credentials", () => {
 	const configDir = join(tempRoot, "load");
 	const credentialsPath = preparePermissiveCredentials(configDir);

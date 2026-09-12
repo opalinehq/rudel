@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import { buildCommand } from "@stricli/core";
 import { createApiClient } from "../lib/api-client.js";
+import { PRODUCTION_API_BASE } from "../lib/api-target.js";
 import { loadCredentials } from "../lib/credentials.js";
 import { getProjectOrgId, setProjectOrgId } from "../lib/project-config.js";
 
@@ -26,7 +27,7 @@ async function runSetOrg(): Promise<undefined | Error> {
 	}
 
 	if (orgs.length === 0) {
-		p.outro("Create one at app.rudel.ai first.");
+		p.outro(`Create one at ${PRODUCTION_API_BASE} first.`);
 		return new Error("No organizations found.");
 	}
 
