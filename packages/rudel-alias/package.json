@@ -31,6 +31,6 @@
 		"README.md"
 	],
 	"dependencies": {
-		"@opalinehq/cli": "0.5.2"
+		"@opalinehq/cli": "0.5.3"
 	}
 }
