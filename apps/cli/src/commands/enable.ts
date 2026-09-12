@@ -9,6 +9,11 @@ import { describeSavedCredentialsApiBaseRisk } from "../lib/api-base.js";
 import { createApiClient } from "../lib/api-client.js";
 import { PRODUCTION_API_BASE } from "../lib/api-target.js";
 import { verifyAuth } from "../lib/auth.js";
+import {
+	type AutoUploadHookResult,
+	captureAutoUploadSetupResult,
+	summarizeAutoUploadRepositories,
+} from "../lib/auto-upload-analytics.js";
 import { enableAutoUploadRepository } from "../lib/auto-upload-config.js";
 import type { BatchUploadItem } from "../lib/batch-upload.js";
 import { renderBatchSummary, runBatchUpload } from "../lib/batch-upload-ui.js";
@@ -45,6 +50,7 @@ async function runEnable(): Promise<undefined | Error> {
 			surface: "cli",
 			disablePersonProfile: shouldDisableCliPersonProfile(options.userId),
 			payload: {
+				setup_command: "enable",
 				agent_source: options.agentSource ?? "unknown",
 				failure_stage: options.failureStage,
 				failure_reason: normalizeFailureReason(options.error),
@@ -148,6 +154,7 @@ async function runEnable(): Promise<undefined | Error> {
 	const adapters = getAvailableAdapters();
 	let adaptersToEnable: AgentAdapter[];
 	let hookInstallFailures = 0;
+	const hookResults = new Map<Source, AutoUploadHookResult>();
 
 	if (adapters.length > 1) {
 		const agentOptions = adapters.map((a) => ({
@@ -185,43 +192,30 @@ async function runEnable(): Promise<undefined | Error> {
 	for (const adapter of adaptersToEnable) {
 		const isAlreadyEnabled = adapter.isHookInstalled();
 
-		if (isAlreadyEnabled) {
-			p.log.info(
-				`${adapter.name}: Auto-upload hook is already enabled. Organization updated.`,
+		try {
+			adapter.installHook();
+			p.log.success(
+				isAlreadyEnabled
+					? `${adapter.name}: Auto-upload hook updated. Organization updated.`
+					: `${adapter.name}: Auto-upload hook enabled in ${adapter.getHookConfigPath()}`,
 			);
-		} else {
-			try {
-				adapter.installHook();
-				p.log.success(
-					`${adapter.name}: Auto-upload hook enabled in ${adapter.getHookConfigPath()}`,
-				);
-			} catch (error) {
-				hookInstallFailures++;
-				captureEnableFailure({
-					agentSource: adapter.source,
-					failureStage: "hook_install",
-					error,
-					organizationId: selectedOrgId,
-					userId: auth.user.id,
-				});
-				p.log.error(
-					`${adapter.name}: failed to enable auto-upload hook (${error instanceof Error ? error.message : String(error)})`,
-				);
-				continue;
-			}
+		} catch (error) {
+			hookInstallFailures++;
+			hookResults.set(adapter.source, {
+				source: adapter.source,
+				status: "failed",
+				error,
+			});
+			p.log.error(
+				`${adapter.name}: failed to enable auto-upload hook (${error instanceof Error ? error.message : String(error)})`,
+			);
+			continue;
 		}
 
-		captureCliProductAnalyticsEvent({
-			distinctId: auth.user.id,
-			event: CliProductAnalyticsEvents.AUTO_UPLOAD_ENABLED,
-			surface: "cli",
-			payload: {
-				organization_id: selectedOrgId,
-				user_id: auth.user.id,
-				agent_source: adapter.source,
-				is_already_enabled: isAlreadyEnabled || undefined,
-				...getBaseCliEventPayload(),
-			},
+		hookResults.set(adapter.source, {
+			source: adapter.source,
+			status: "enabled",
+			alreadyInstalled: isAlreadyEnabled,
 		});
 	}
 
@@ -230,8 +224,32 @@ async function runEnable(): Promise<undefined | Error> {
 	const allowPlaintextEndpoint = allowsInsecureEndpointFromEnv();
 	let totalFailed = 0;
 
-	for (const adapter of adaptersToEnable) {
-		const sessions = await adapter.findProjectSessions(cwd);
+	const discovered = await Promise.all(
+		adaptersToEnable.map(async (adapter) => ({
+			adapter,
+			sessions: await adapter.findProjectSessions(cwd),
+		})),
+	);
+	for (const { adapter, sessions } of discovered) {
+		const result = hookResults.get(adapter.source);
+		if (result) {
+			captureAutoUploadSetupResult({
+				result,
+				summaries: summarizeAutoUploadRepositories([
+					{
+						repositoryKey: repository.repoKey,
+						organizationId: selectedOrgId,
+						source: adapter.source,
+						sessionIds: sessions.map((session) => session.sessionId),
+					},
+				]),
+				userId: auth.user.id,
+				command: "enable",
+			});
+		}
+	}
+
+	for (const { adapter, sessions } of discovered) {
 		if (sessions.length === 0) continue;
 
 		const shouldUpload = await p.confirm({
